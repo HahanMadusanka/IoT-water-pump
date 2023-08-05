@@ -23,6 +23,7 @@
 
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
+#include <ArduinoJson.h>
 
 /* 1. Define the WiFi credentials */
 #define WIFI_SSID "Dialog 4G 038"
@@ -125,44 +126,62 @@ void loop()
     {
         dataMillis = millis();
 
-        if (!taskCompleted)
-        {
-            taskCompleted = true;
+//        if (!taskCompleted)
+//        {
+//            taskCompleted = true;
+//
+//            // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
+//            FirebaseJson content;
+//
+//            content.set("fields/Japan/mapValue/fields/time_zone/integerValue", "9");
+//            content.set("fields/Japan/mapValue/fields/population/integerValue", "125570000");
+//
+//            content.set("fields/Belgium/mapValue/fields/time_zone/integerValue", "1");
+//            content.set("fields/Belgium/mapValue/fields/population/integerValue", "11492641");
+//
+//            content.set("fields/Singapore/mapValue/fields/time_zone/integerValue", "8");
+//            content.set("fields/Singapore/mapValue/fields/population/integerValue", "5703600");
+//
+//            // info is the collection id, countries is the document id in collection info.
+//            String documentPath = "info/countries";
+//
+//            Serial.print("Create document... ");
+//
+//            if (Firebase.Firestore.createDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, documentPath.c_str(), content.raw()))
+//                Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+//            else
+//                Serial.println(fbdo.errorReason());
+//        }
 
-            // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
-            FirebaseJson content;
-
-            content.set("fields/Japan/mapValue/fields/time_zone/integerValue", "9");
-            content.set("fields/Japan/mapValue/fields/population/integerValue", "125570000");
-
-            content.set("fields/Belgium/mapValue/fields/time_zone/integerValue", "1");
-            content.set("fields/Belgium/mapValue/fields/population/integerValue", "11492641");
-
-            content.set("fields/Singapore/mapValue/fields/time_zone/integerValue", "8");
-            content.set("fields/Singapore/mapValue/fields/population/integerValue", "5703600");
-
-            // info is the collection id, countries is the document id in collection info.
-            String documentPath = "info/countries";
-
-            Serial.print("Create document... ");
-
-            if (Firebase.Firestore.createDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, documentPath.c_str(), content.raw()))
-                Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-            else
-                Serial.println(fbdo.errorReason());
-        }
-
-        String documentPath = "info/countries";
-        String mask = "Singapore";
+        String documentPath = "zone/device";
 
         // If the document path contains space e.g. "a b c/d e f"
         // It should encode the space as %20 then the path will be "a%20b%20c/d%20e%20f"
 
         Serial.print("Get a document... ");
 
-        if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), mask.c_str()))
-            Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-        else
-            Serial.println(fbdo.errorReason());
+        if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")){
+
+            Serial.println(fbdo.payload().c_str());
+            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+
+                  // Parse the JSON data
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, fbdo.payload().c_str());
+
+            // Extract the specific fields
+            const char* status = doc["fields"]["status"]["stringValue"];
+            int pyrethroids = doc["fields"]["pyrethroids"]["integerValue"];
+            int water = doc["fields"]["water"]["integerValue"];
+
+            Serial.println(water);
+            Serial.println(pyrethroids);
+
+        }
+
+        else{
+          Serial.println(fbdo.errorReason());
+        }
+          
     }
 }
