@@ -172,7 +172,12 @@ void loop()
         taskCompletedWater = true;
         digitalWrite(pinWater, LOW);
       }else {
-        digitalWrite(pinWater, HIGH);
+        if(flowRateWater == 0 || ((millis()/ (1000/flowRateWater)) %2) == 0){
+          digitalWrite(pinWater, HIGH);
+        } else{
+          digitalWrite(pinWater, LOW);
+        }
+       
       }
     }
 
@@ -181,7 +186,11 @@ void loop()
         taskCompletedBordeaux_mixture = true;
         digitalWrite(pinBordeaux, LOW);
       }else {
-        digitalWrite(pinBordeaux, HIGH);
+         if(flowRateBordeaux_mixture == 0 || ((millis()/ (1000/flowRateBordeaux_mixture)) %2) == 0){
+           digitalWrite(pinBordeaux, HIGH);
+         } else {
+           digitalWrite(pinBordeaux, LOW);
+         }
       }
     }
 
@@ -190,7 +199,11 @@ void loop()
         taskCompletedChlorothalonil = true;
         digitalWrite(pinChlorothalonil, LOW);
       }else {
-        digitalWrite(pinChlorothalonil, HIGH);
+         if(flowRateChlorothalonil == 0 || ((millis()/ (1000/flowRateChlorothalonil)) %2) == 0){
+           digitalWrite(pinChlorothalonil, HIGH);
+         } else {
+           digitalWrite(pinChlorothalonil, LOW);
+         }
       }
     } 
 
@@ -199,7 +212,11 @@ void loop()
         taskCompletedPyrethroids = true;
         digitalWrite(pinPyrethroids, LOW);
       }else {
-        digitalWrite(pinPyrethroids, HIGH);
+        if(flowRatePyrethroids == 0 || ((millis()/ (1000/flowRatePyrethroids)) %2) == 0){
+          digitalWrite(pinPyrethroids, HIGH);
+        } else {
+          digitalWrite(pinPyrethroids, LOW);
+        }
       }
     }       
   }
@@ -213,7 +230,7 @@ void updateStatus(int water, int pyrethroids, int bordeaux_mixture, int chloroth
 
     // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
     FirebaseJson content;
-    String documentPath = "zone2/device";
+    String documentPath = "zone/device";
 
     // A write object that will be written to the document.
     struct fb_esp_firestore_document_write_t update_write;
