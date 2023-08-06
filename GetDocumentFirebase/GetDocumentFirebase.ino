@@ -1,17 +1,3 @@
-
-/**
- * Created by K. Suwatchai (Mobizt)
- *
- * Email: k_suwatchai@hotmail.com
- *
- * Github: https://github.com/mobizt/Firebase-ESP-Client
- *
- * Copyright (c) 2023 mobizt
- *
- */
-
-// This example shows how to get a document from a document collection. This operation required Email/password, custom or OAUth2.0 authentication.
-
 #include <Arduino.h>
 #if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #include <WiFi.h>
@@ -138,7 +124,7 @@ void loop()
             Serial.println(fbdo.payload().c_str());
             // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
 
-                  // Parse the JSON data
+            // Parse the JSON data
             DynamicJsonDocument doc(1024);
             deserializeJson(doc, fbdo.payload().c_str());
 
@@ -146,13 +132,21 @@ void loop()
             const char* status = doc["fields"]["status"]["stringValue"];
             int pyrethroids = doc["fields"]["pyrethroids"]["integerValue"];
             int water = doc["fields"]["water"]["integerValue"];
+            int bordeaux_mixture = doc["fields"]["bordeaux_mixture"]["integerValue"];
+            int chlorothalonil = doc["fields"]["chlorothalonil"]["integerValue"];
+
+            int flowRatePyrethroids = doc["fields"]["flowRatePyrethroids"]["integerValue"];
+            int flowRateWater = doc["fields"]["flowRateWater"]["integerValue"];
+            int flowRateBordeaux_mixture = doc["fields"]["flowRateBordeaux_mixture"]["integerValue"];
+            int flowRateChlorothalonil = doc["fields"]["flowRateChlorothalonil"]["integerValue"];
+
 
             Serial.println(water);
             Serial.println(pyrethroids);
             Serial.println(status);
 
             // Call the function to update the status field
-            updateStatus();
+            updateStatus(water, pyrethroids, bordeaux_mixture, chlorothalonil, flowRatePyrethroids, flowRateWater, flowRateBordeaux_mixture, flowRateChlorothalonil);
         }
 
         else{
@@ -163,37 +157,43 @@ void loop()
 }
 
 // Function to update the status field in the Firestore document
-void updateStatus() {
+void updateStatus(int water, int pyrethroids, int bordeaux_mixture, int chlorothalonil, int flowRatePyrethroids, int flowRateWater, int flowRateBordeaux_mixture, int flowRateChlorothalonil) {
 
-        // The dyamic array of write object fb_esp_firestore_document_write_t.
-        std::vector<struct fb_esp_firestore_document_write_t> writes;
+    // The dynamic array of write object fb_esp_firestore_document_write_t.
+    std::vector<struct fb_esp_firestore_document_write_t> writes;
 
+    // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
+    FirebaseJson content;
+    String documentPath = "zone2/device";
 
-           // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
-           FirebaseJson content;
-           String documentPath = "zone/device";
+    // A write object that will be written to the document.
+    struct fb_esp_firestore_document_write_t update_write;
 
-    //A write object that will be written to the document.
-        struct fb_esp_firestore_document_write_t update_write;
+    update_write.type = fb_esp_firestore_document_write_type_update;
 
-          update_write.type = fb_esp_firestore_document_write_type_update;
+    // Set the field to update (status) without affecting other fields
+    content.set("fields/status/stringValue", "done");
+    content.set("fields/water/integerValue", water);
+    content.set("fields/pyrethroids/integerValue", pyrethroids);
+    content.set("fields/bordeaux_mixture/integerValue", bordeaux_mixture);
+    content.set("fields/chlorothalonil/integerValue", chlorothalonil);
 
-          content.set("fields/status/stringValue", "done");
-          //Set the update document content
-          update_write.update_document_content = content.raw();
-          //Set the update document path
-          update_write.update_document_path = documentPath.c_str();
-          //Add a write object to a write array.
-          writes.push_back(update_write);
+    content.set("fields/flowRatePyrethroids/integerValue", flowRatePyrethroids);
+    content.set("fields/flowRateWater/integerValue", flowRateWater);
+    content.set("fields/flowRateBordeaux_mixture/integerValue", flowRateBordeaux_mixture);
+    content.set("fields/flowRateChlorothalonil/integerValue", flowRateChlorothalonil);
 
+    // Set the update document content
+    update_write.update_document_content = content.raw();
+    // Set the update document path
+    update_write.update_document_path = documentPath.c_str();
+    // Add a write object to a write array.
+    writes.push_back(update_write);
 
+    Serial.println("Update status... ");
 
-
-
-          Serial.println("Update status... ");
-
-          if (Firebase.Firestore.commitDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, writes /* dynamic array of fb_esp_firestore_document_write_t */, "" /* transaction */))
-            Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-          else
-            Serial.println(fbdo.errorReason());
+    if (Firebase.Firestore.commitDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, writes /* dynamic array of fb_esp_firestore_document_write_t */, "" /* transaction */))
+        Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+    else
+        Serial.println(fbdo.errorReason());
 }
