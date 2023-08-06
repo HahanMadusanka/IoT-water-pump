@@ -31,9 +31,15 @@ FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-bool taskCompleted = false;
+unsigned char pinWater = 12;
+unsigned char pinPyrethroids = 13;
+unsigned char pinChlorothalonil = 14;
+unsigned char pinBordeaux = 27;
 
-unsigned long dataMillis = 0;
+bool taskCompletedChlorothalonil, taskCompletedBordeaux_mixture, taskCompletedPyrethroids, taskCompletedWater = true;
+int pyrethroids, water, bordeaux_mixture, chlorothalonil, flowRatePyrethroids, flowRateWater, flowRateBordeaux_mixture, flowRateChlorothalonil;
+
+unsigned long dataMillis, waterMillis, bordeaux_mixtureMillis, chlorothalonilMillis, pyrethroidsMillis = 0;
 
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 WiFiMulti multi;
@@ -41,8 +47,14 @@ WiFiMulti multi;
 
 void setup()
 {
+  taskCompletedChlorothalonil = taskCompletedBordeaux_mixture = taskCompletedPyrethroids = taskCompletedWater = true;
 
-    Serial.begin(115200);
+  pinMode(pinWater, OUTPUT);
+  pinMode(pinPyrethroids, OUTPUT);
+  pinMode(pinChlorothalonil, OUTPUT);
+  pinMode(pinBordeaux, OUTPUT);
+
+   Serial.begin(115200);
 
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     multi.addAP(WIFI_SSID, WIFI_PASSWORD);
@@ -105,18 +117,12 @@ void setup()
 
 void loop()
 {
+  if(taskCompletedChlorothalonil && taskCompletedBordeaux_mixture && taskCompletedPyrethroids && taskCompletedWater) {
 
-    // Firebase.ready() should be called repeatedly to handle authentication tasks.
-
-    if (Firebase.ready() && (millis() - dataMillis > 60000 || dataMillis == 0))
-    {
+    if (Firebase.ready() && (millis() - dataMillis > 60000 || dataMillis == 0)) {
         dataMillis = millis();
 
         String documentPath = "zone/device";
-
-        // If the document path contains space e.g. "a b c/d e f"
-        // It should encode the space as %20 then the path will be "a%20b%20c/d%20e%20f"
-
         Serial.print("Get a document... ");
 
         if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")){
@@ -129,31 +135,74 @@ void loop()
             deserializeJson(doc, fbdo.payload().c_str());
 
             // Extract the specific fields
-            const char* status = doc["fields"]["status"]["stringValue"];
-            int pyrethroids = doc["fields"]["pyrethroids"]["integerValue"];
-            int water = doc["fields"]["water"]["integerValue"];
-            int bordeaux_mixture = doc["fields"]["bordeaux_mixture"]["integerValue"];
-            int chlorothalonil = doc["fields"]["chlorothalonil"]["integerValue"];
+            String status = doc["fields"]["status"]["stringValue"];
+            pyrethroids = doc["fields"]["pyrethroids"]["integerValue"];
+            water = doc["fields"]["water"]["integerValue"];
+            bordeaux_mixture = doc["fields"]["bordeaux_mixture"]["integerValue"];
+            chlorothalonil = doc["fields"]["chlorothalonil"]["integerValue"];
 
-            int flowRatePyrethroids = doc["fields"]["flowRatePyrethroids"]["integerValue"];
-            int flowRateWater = doc["fields"]["flowRateWater"]["integerValue"];
-            int flowRateBordeaux_mixture = doc["fields"]["flowRateBordeaux_mixture"]["integerValue"];
-            int flowRateChlorothalonil = doc["fields"]["flowRateChlorothalonil"]["integerValue"];
+            flowRatePyrethroids = doc["fields"]["flowRatePyrethroids"]["integerValue"];
+            flowRateWater = doc["fields"]["flowRateWater"]["integerValue"];
+            flowRateBordeaux_mixture = doc["fields"]["flowRateBordeaux_mixture"]["integerValue"];
+            flowRateChlorothalonil = doc["fields"]["flowRateChlorothalonil"]["integerValue"];
 
 
             Serial.println(water);
             Serial.println(pyrethroids);
             Serial.println(status);
 
-            // Call the function to update the status field
-            updateStatus(water, pyrethroids, bordeaux_mixture, chlorothalonil, flowRatePyrethroids, flowRateWater, flowRateBordeaux_mixture, flowRateChlorothalonil);
-        }
+            if(status == "pending"){
+              taskCompletedChlorothalonil = taskCompletedBordeaux_mixture = taskCompletedPyrethroids = taskCompletedWater = false;
+              // Call the function to update the status field
+              updateStatus(water, pyrethroids, bordeaux_mixture, chlorothalonil, flowRatePyrethroids, flowRateWater, flowRateBordeaux_mixture, flowRateChlorothalonil);
+              waterMillis = millis();
+              pyrethroidsMillis = millis();
+              chlorothalonilMillis = millis();
+              bordeaux_mixtureMillis = millis();
+            }
 
-        else{
+        } else{
           Serial.println(fbdo.errorReason());
         }
           
     }
+  }else {
+    if(!taskCompletedWater) {
+      if(millis() - waterMillis > (1000 * water)) {
+        taskCompletedWater = true;
+        digitalWrite(pinWater, LOW);
+      }else {
+        digitalWrite(pinWater, HIGH);
+      }
+    }
+
+    if(!taskCompletedBordeaux_mixture) {
+      if(millis() - bordeaux_mixtureMillis > (1000 * bordeaux_mixture)) {
+        taskCompletedBordeaux_mixture = true;
+        digitalWrite(pinBordeaux, LOW);
+      }else {
+        digitalWrite(pinBordeaux, HIGH);
+      }
+    }
+
+    if(!taskCompletedChlorothalonil) {
+      if(millis() - chlorothalonilMillis > (1000 * chlorothalonil)) {
+        taskCompletedChlorothalonil = true;
+        digitalWrite(pinChlorothalonil, LOW);
+      }else {
+        digitalWrite(pinChlorothalonil, HIGH);
+      }
+    } 
+
+    if(!taskCompletedPyrethroids) {
+      if(millis() - pyrethroidsMillis > (1000 * pyrethroids)) {
+        taskCompletedPyrethroids = true;
+        digitalWrite(pinPyrethroids, LOW);
+      }else {
+        digitalWrite(pinPyrethroids, HIGH);
+      }
+    }       
+  }
 }
 
 // Function to update the status field in the Firestore document
