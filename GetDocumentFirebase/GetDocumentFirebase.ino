@@ -126,33 +126,6 @@ void loop()
     {
         dataMillis = millis();
 
-//        if (!taskCompleted)
-//        {
-//            taskCompleted = true;
-//
-//            // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
-//            FirebaseJson content;
-//
-//            content.set("fields/Japan/mapValue/fields/time_zone/integerValue", "9");
-//            content.set("fields/Japan/mapValue/fields/population/integerValue", "125570000");
-//
-//            content.set("fields/Belgium/mapValue/fields/time_zone/integerValue", "1");
-//            content.set("fields/Belgium/mapValue/fields/population/integerValue", "11492641");
-//
-//            content.set("fields/Singapore/mapValue/fields/time_zone/integerValue", "8");
-//            content.set("fields/Singapore/mapValue/fields/population/integerValue", "5703600");
-//
-//            // info is the collection id, countries is the document id in collection info.
-//            String documentPath = "info/countries";
-//
-//            Serial.print("Create document... ");
-//
-//            if (Firebase.Firestore.createDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, documentPath.c_str(), content.raw()))
-//                Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-//            else
-//                Serial.println(fbdo.errorReason());
-//        }
-
         String documentPath = "zone/device";
 
         // If the document path contains space e.g. "a b c/d e f"
@@ -176,7 +149,10 @@ void loop()
 
             Serial.println(water);
             Serial.println(pyrethroids);
+            Serial.println(status);
 
+            // Call the function to update the status field
+            updateStatus();
         }
 
         else{
@@ -184,4 +160,40 @@ void loop()
         }
           
     }
+}
+
+// Function to update the status field in the Firestore document
+void updateStatus() {
+
+        // The dyamic array of write object fb_esp_firestore_document_write_t.
+        std::vector<struct fb_esp_firestore_document_write_t> writes;
+
+
+           // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
+           FirebaseJson content;
+           String documentPath = "zone/device";
+
+    //A write object that will be written to the document.
+        struct fb_esp_firestore_document_write_t update_write;
+
+          update_write.type = fb_esp_firestore_document_write_type_update;
+
+          content.set("fields/status/stringValue", "done");
+          //Set the update document content
+          update_write.update_document_content = content.raw();
+          //Set the update document path
+          update_write.update_document_path = documentPath.c_str();
+          //Add a write object to a write array.
+          writes.push_back(update_write);
+
+
+
+
+
+          Serial.println("Update status... ");
+
+          if (Firebase.Firestore.commitDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, writes /* dynamic array of fb_esp_firestore_document_write_t */, "" /* transaction */))
+            Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+          else
+            Serial.println(fbdo.errorReason());
 }
