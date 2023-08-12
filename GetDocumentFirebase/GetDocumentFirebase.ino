@@ -12,8 +12,8 @@
 #include <ArduinoJson.h>
 
 /* 1. Define the WiFi credentials */
-#define WIFI_SSID "Dialog 4G 038"
-#define WIFI_PASSWORD "576fAbd1"
+#define WIFI_SSID "AndroidAP5E34"
+#define WIFI_PASSWORD "abcd1234"
 
 /* 2. Define the API Key */
 #define API_KEY "AIzaSyBtcbT4-0wssbZno2jEQYTTZPIlX4jSwuI"
@@ -31,10 +31,11 @@ FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-unsigned char pinWater = 12;
+unsigned char pinWater = 32;
 unsigned char pinPyrethroids = 13;
 unsigned char pinChlorothalonil = 14;
-unsigned char pinBordeaux = 27;
+unsigned char pinBordeaux = 26;
+// unsigned char pinExtra = 33;
 
 bool taskCompletedChlorothalonil, taskCompletedBordeaux_mixture, taskCompletedPyrethroids, taskCompletedWater = true;
 int pyrethroids, water, bordeaux_mixture, chlorothalonil, flowRatePyrethroids, flowRateWater, flowRateBordeaux_mixture, flowRateChlorothalonil;
@@ -147,8 +148,9 @@ void loop()
             flowRateChlorothalonil = doc["fields"]["flowRateChlorothalonil"]["integerValue"];
 
 
+            Serial.print("water - ");
             Serial.println(water);
-            Serial.println(pyrethroids);
+            Serial.print("status - ");
             Serial.println(status);
 
             if(status == "pending"){
